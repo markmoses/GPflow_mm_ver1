@@ -54,6 +54,7 @@ class SVGP(GPModel):
                  q_mu=None,
                  q_sqrt=None,
                  weight=None,
+                 data_variance=None,
                  **kwargs):
         """
         - X is a data matrix, size N x D
@@ -87,6 +88,10 @@ class SVGP(GPModel):
         if weight is None:
             weight = np.repeat(1., Y.shape[0])[:,None]
         self.weight = weight
+        
+        if data_variance is None:
+            data_variance = np.repeat(0., Y.shape[0])[:,None]
+        self.data_variance = data_variance
         
         # init variational parameters
         num_inducing = len(self.feature)
@@ -163,7 +168,7 @@ class SVGP(GPModel):
         fmean, fvar = self._build_predict(self.X, full_cov=False, full_output_cov=False)
 
         # Get variational expectations.
-        var_exp = self.likelihood.variational_expectations(fmean, fvar, self.Y)
+        var_exp = self.likelihood.variational_expectations(fmean, fvar+self.data_variance, self.Y)
 
         # re-scale for minibatch size
         scale = tf.cast(self.num_data, settings.float_type) / tf.cast(tf.shape(self.X)[0], settings.float_type)
